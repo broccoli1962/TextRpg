@@ -144,12 +144,21 @@ namespace TextRpg
 
             if (IsClear)
             {
-                Random rand = new Random();
-                float hp = (dungeon.defLimit - this.TotalDefence) + (float)rand.NextDouble() * ((35.0f + (dungeon.defLimit - this.TotalDefence)) - (dungeon.defLimit - this.TotalDefence));
+                float upDown = dungeon.defLimit - this.TotalDefence;
+                
+                int hp = new Random().Next((int)(20 + upDown),(int)(35 + upDown));
                 this.Hp -= hp;
 
-                float gold = (this.TotalStrengh) + (float)rand.NextDouble() * ((this.TotalStrengh * 2) - (this.TotalStrengh));
-                this.Gold += dungeon.clearGold + gold;
+                int goldRand = new Random().Next((int)(this.TotalStrengh), (int)(this.TotalStrengh * 2));
+                float goldBonus = dungeon.clearGold * (goldRand / 100f);
+                this.Gold += goldBonus + dungeon.clearGold;
+
+                //Random rand = new Random();
+                //float hp = (dungeon.defLimit - this.TotalDefence) + (float)rand.NextDouble() * ((35.0f + (dungeon.defLimit - this.TotalDefence)) - (dungeon.defLimit - this.TotalDefence));
+                //this.Hp -= hp;
+
+                //float gold = (this.TotalStrengh) + (float)rand.NextDouble() * ((this.TotalStrengh * 2) - (this.TotalStrengh));
+                //this.Gold += dungeon.clearGold + gold;
 
                 this.Level++;
                 this.BaseStrengh += 0.5f;
