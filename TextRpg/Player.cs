@@ -62,44 +62,46 @@ namespace TextRpg
         public Items EquipWeapon { get; private set; }
         public Items EquipArmor { get; private set; }
 
+        public List<Items> Inv { get; set; }
+
         public void EquipItem(Items item)
         {
             if (!Inv.Contains(item)) return;
 
-            if (item.itemType == ItemType.Weapon) 
+            if (item.ItemType == ItemType.Weapon) 
             {
                 if(EquipWeapon != null)
                 {
-                    EquipWeapon.isEquip = false;
+                    EquipWeapon.IsEquip = false;
                 }
 
                 if(EquipWeapon == item)
                 {
                     EquipWeapon = null;
-                    item.isEquip = false;
+                    item.IsEquip = false;
                 }
                 else
                 {
                     EquipWeapon = item;
-                    item.isEquip = true;
+                    item.IsEquip = true;
                 }
             }
-            else if(item.itemType == ItemType.Armor)
+            else if(item.ItemType == ItemType.Armor)
             {
                 if (EquipArmor != null)
                 {
-                    EquipArmor.isEquip = false;
+                    EquipArmor.IsEquip = false;
                 }
 
                 if(EquipArmor == item)
                 {
                     EquipArmor = null;
-                    item.isEquip = false;
+                    item.IsEquip = false;
                 }
                 else
                 {
                     EquipArmor = item;
-                    item.isEquip = true;
+                    item.IsEquip = true;
                 }
             }
             UpdateStatus();
@@ -111,16 +113,61 @@ namespace TextRpg
             _addDefence = 0;
             foreach (var item in Inv)
             {
-                if (item.isEquip)
+                if (item.IsEquip)
                 {
                     _addStrengh += item.ItemAtk;
                     _addDefence += item.ItemDef;
                 }
             }
-
         }
 
-        public List<Items> Inv { get; set; }
+        public DungeonResult DClearCheck(Dungeon dungeon)
+        {
+            DungeonResult result = new DungeonResult()
+            {
+                BeforeHp = this.Hp,
+                BeforeGold = this.Gold,
+            };
+
+            bool IsClear = false;
+            if (this.TotalDefence < dungeon.defLimit)
+            {
+                int rand = new Random().Next(0, 10);
+                IsClear = rand < 4;
+            }
+            else
+            {
+                IsClear = true;
+            }
+
+            result.IsClear = IsClear;
+
+            if (IsClear)
+            {
+                Random rand = new Random();
+                float hp = (dungeon.defLimit - this.TotalDefence) + (float)rand.NextDouble() * ((35.0f + (dungeon.defLimit - this.TotalDefence)) - (dungeon.defLimit - this.TotalDefence));
+                this.Hp -= hp;
+
+                float gold = (this.TotalStrengh) + (float)rand.NextDouble() * ((this.TotalStrengh * 2) - (this.TotalStrengh));
+                this.Gold += dungeon.clearGold + gold;
+
+                this.Level++;
+                this.BaseStrengh += 0.5f;
+                this.BaseDefence += 1f;
+                result.LevelUp = true;
+            }
+            else
+            {
+                this.Hp /= 2;
+            }
+
+            if (this.Hp < 0) this.Hp = 0;
+
+            result.AfterHp = this.Hp;
+            result.AfterGold = this.Gold;
+
+            return result;
+        }
 
         private Player(){
             Level = 1;

@@ -8,36 +8,24 @@ using System.Threading.Tasks;
 
 namespace TextRpg
 {
-    enum SceneList
+    public enum SceneList
     {
         StartScene,
         Info,
         Inventory,
         Shop,
         Dungeon,
-        Rest
+        Rest,
+        SetupScene
     }
 
-    public struct Dungeon
-    {
-        public string name;
-        public int defLimit;
-        public float clearGold;
-
-        public Dungeon(string name, int defLimit, float gold)
-        {
-            this.name = name;
-            this.defLimit = defLimit;
-            this.clearGold = gold;
-        }
-    }
+    
 
     internal class SceneLoad
     {
         public SceneList scene;
         private Player p = Player.Instance;
-        public List<Items> shopItems;
-        public List<Dungeon> dungeons;
+        private GameData data = GameData.Instance;
         //private StringBuilder sb = new StringBuilder(); //여기서 잘못된 선택을 한 듯하다...
 
         public void QuickLoad(SceneList scene)
@@ -61,6 +49,9 @@ namespace TextRpg
                     break;
                 case SceneList.Rest:
                     CharacterRest();
+                    break;
+                case SceneList.SetupScene:
+                    SetupPlayerScene();
                     break;
                 default:
                     break;
@@ -87,8 +78,9 @@ namespace TextRpg
                 Console.WriteLine("3.상점");
                 Console.WriteLine("4.던전입장");
                 Console.WriteLine("5.휴식하기");
+                Console.WriteLine("6.저장하고 종료");
 
-                int num = ChoiceHelper(1, 5);
+                int num = ChoiceHelper.Choice(0, 6);
 
                 switch (num)
                 {
@@ -106,6 +98,11 @@ namespace TextRpg
                         break;
                     case 5:
                         QuickLoad(SceneList.Rest);
+                        break;
+                    case 6:
+                        DataManage.SaveData(p, data);
+                        Console.WriteLine("게임 저장 완료");
+                        Environment.Exit(0);
                         break;
                 }
             }
@@ -141,7 +138,7 @@ namespace TextRpg
                 Console.WriteLine();
                 Console.WriteLine($"0. 나가기");
 
-                int num = ChoiceHelper(0, 0);
+                int num = ChoiceHelper.Choice(0, 0);
 
                 if (num == 0) break;
             }
@@ -166,7 +163,7 @@ namespace TextRpg
                 Console.WriteLine($"1. 장착 관리");
                 Console.WriteLine($"0. 나가기");
 
-                int num = ChoiceHelper(0, 1);
+                int num = ChoiceHelper.Choice(0, 1);
 
                 if (num == 0) break;
                 else if (num == 1) {
@@ -194,7 +191,7 @@ namespace TextRpg
                 Console.WriteLine();
                 Console.WriteLine($"0. 나가기");
 
-                int num = ChoiceHelper(0, p.Inv.Count);
+                int num = ChoiceHelper.Choice(0, p.Inv.Count);
 
                 if (num == 0) break;
                 else{
@@ -217,10 +214,10 @@ namespace TextRpg
                 Console.WriteLine();
                 Console.WriteLine($"[아이템 목록]");
 
-                for (int i = 0; i < shopItems.Count; i++)
+                for (int i = 0; i < data.ShopItems.Count; i++)
                 {
                     Console.Write($"- ");
-                    shopItems[i].ItemShopShow();
+                    data.ShopItems[i].ItemShopShow();
                     Console.WriteLine();
                 }
                 Console.WriteLine();
@@ -228,7 +225,7 @@ namespace TextRpg
                 Console.WriteLine("2. 아이템 판매");
                 Console.WriteLine("0. 나가기");
 
-                int num = ChoiceHelper(0, 2);
+                int num = ChoiceHelper.Choice(0, 2);
 
                 if (num == 0) break;
                 else if (num == 1)
@@ -255,30 +252,30 @@ namespace TextRpg
                 Console.WriteLine();
                 Console.WriteLine($"[아이템 목록]");
 
-                for (int i = 0; i < shopItems.Count; i++)
+                for (int i = 0; i < data.ShopItems.Count; i++)
                 {
                     Console.Write($"- {i + 1} ");
-                    shopItems[i].ItemShopShow();
+                    data.ShopItems[i].ItemShopShow();
                     Console.WriteLine();
                 }
                 Console.WriteLine();
                 Console.WriteLine("0. 나가기");
 
-                int num = ChoiceHelper(0, shopItems.Count);
+                int num = ChoiceHelper.Choice(0, data.ShopItems.Count);
 
                 if (num == 0) break;
                 else
                 {
-                    if (shopItems[num - 1].isSell)
+                    if (data.ShopItems[num - 1].IsSell)
                     {
                         Console.WriteLine("이미 구매한 아이템입니다.");
                         Thread.Sleep(1000);
                     }
-                    else if (p.Gold >= shopItems[num - 1].ItemGold)
+                    else if (p.Gold >= data.ShopItems[num - 1].ItemGold)
                     {
-                        p.Gold -= shopItems[num - 1].ItemGold;
-                        p.Inv.Add(shopItems[num - 1]);
-                        shopItems[num - 1].isSell = true;
+                        p.Gold -= data.ShopItems[num - 1].ItemGold;
+                        p.Inv.Add(data.ShopItems[num - 1]);
+                        data.ShopItems[num - 1].IsSell = true;
                         Console.Write("구매를 완료했습니다.");
                         Thread.Sleep(1000);
                     }
@@ -313,13 +310,13 @@ namespace TextRpg
                 Console.WriteLine();
                 Console.WriteLine("0. 나가기");
 
-                int num = ChoiceHelper(0, p.Inv.Count);
+                int num = ChoiceHelper.Choice(0, p.Inv.Count);
 
                 if (num == 0) break;
                 else
                 {
-                    p.Inv[num - 1].isEquip = true;
-                    p.Inv[num - 1].isSell = false;
+                    p.Inv[num - 1].IsEquip = false;
+                    p.Inv[num - 1].IsSell = false;
                     p.Gold += p.Inv[num - 1].ItemGold * 0.85f;
                     p.Inv.RemoveAt(num - 1);
                     p.UpdateStatus();
@@ -336,136 +333,58 @@ namespace TextRpg
                 Console.WriteLine("던전입장");
                 Console.WriteLine("이곳에서 던전으로 들어가기전 활동을 할 수 있습니다.");
                 Console.WriteLine();
-                Console.WriteLine("1. 쉬운 던전\t| 방어력 5 이상 권장");
-                Console.WriteLine("2. 일반 던전\t| 방어력 11 이상 권장");
-                Console.WriteLine("3. 어려운 던전\t| 방어력 17 이상 권장");
+                Console.WriteLine($"1. {data.Dungeons[0].name} 던전\t| 방어력 {data.Dungeons[0].defLimit} 이상 권장");
+                Console.WriteLine($"2. {data.Dungeons[1].name} 던전\t| 방어력 {data.Dungeons[1].defLimit} 이상 권장");
+                Console.WriteLine($"3. {data.Dungeons[2].name} 던전\t| 방어력 {data.Dungeons[2].defLimit} 이상 권장");
                 Console.WriteLine("0. 나가기");
 
-                int num = ChoiceHelper(0, 3);
+                int num = ChoiceHelper.Choice(0, 3);
 
                 if (num == 0) break;
                 else
                 {
-                    bool check = ClearCheck(dungeons[num - 1].defLimit);
-                    CharacterDungeonResult(check, dungeons[num-1].defLimit);
+                    Dungeon selectedDungeon = data.Dungeons[num - 1];
+                    DungeonResult result = p.DClearCheck(selectedDungeon);
+                    CharacterDungeonResult(result, selectedDungeon);
                 }
             }
         }
 
-        private bool ClearCheck(int defLimit)
+        //private void CharacterLevelUp()
+        //{
+        //    p.Level++;
+        //    p.BaseStrengh += 0.5f;
+        //    p.BaseDefence += 1;
+        //}
+
+        private void CharacterDungeonResult(DungeonResult result, Dungeon dungeon)
         {
-            if(p.TotalDefence < defLimit)
+            Console.Clear();
+
+            if (result.IsClear)
             {
-                int rand = new Random().Next(0,10);
-                if(rand < 4)
-                {
-                    return false;
-                }
-                else
-                {
-                    return true;
-                }
+                //CharacterLevelUp();
+                Console.WriteLine("던전 클리어");
+                Console.WriteLine("축하합니다!!");
+                Console.Write($"{dungeon.name} 던전을 클리어 하였습니다.");
+                Console.WriteLine();
+                Console.WriteLine("[탐험 결과]");
+                Console.WriteLine($"체력 {result.BeforeHp:F0} -> {result.AfterHp:F0}");
+                Console.WriteLine($"Gold {result.BeforeGold:F0} -> {result.AfterGold:F0}");
             }
             else
             {
-                return true;
+                Console.WriteLine("던전 클리어 실패");
+                Console.Write($"{dungeon.name} 던전을 클리어 하지 못했습니다.");
+                Console.WriteLine();
+                Console.WriteLine("[탐험 결과]");
+                Console.WriteLine($"체력 {result.BeforeHp:F0} -> {result.AfterHp:F0}");
+                Console.WriteLine($"Gold {result.BeforeGold:F0} -> {result.AfterGold:F0}");
             }
-        }
+            Console.WriteLine();
+            Console.WriteLine("0. 나가기");
 
-        private void ClearReward(bool clear, float defLimit)
-        {
-            if (clear)
-            {
-                System.Random rand = new System.Random();
-                float randomNum = (defLimit - p.TotalDefence) + (float)rand.NextDouble() * ((35.0f + (defLimit - p.TotalDefence)) - (defLimit - p.TotalDefence));
-                p.Hp -= randomNum;
-
-                //float rand2 = new Random().Next(p.TotalStrengh, p.TotalStrengh * 2);
-                float randomNum2 = (p.TotalStrengh) + (float)rand.NextDouble() * ((p.TotalStrengh * 2) - (p.TotalStrengh));
-
-
-                float temp = randomNum2 / 100f;
-                for (int i = 0; i < dungeons.Count; i++)
-                {
-                    if (defLimit == dungeons[i].defLimit)
-                    {
-                        p.Gold += dungeons[i].clearGold + (dungeons[i].clearGold*temp);
-                    }
-                }
-            }
-            else
-            {
-                p.Hp /= 2;
-            }
-        }
-
-        private void CharacterLevelUp()
-        {
-            p.Level++;
-            p.BaseStrengh += 0.5f;
-            p.BaseDefence += 1;
-        }
-
-        private void CharacterDungeonResult(bool clear, int defLimit)
-        {
-            float beforeHealth = p.Hp;
-            float beforeGold = p.Gold;
-            
-            ClearReward(clear, defLimit);
-            if (clear)
-            {
-                while (true)
-                {
-                    Console.Clear();
-                    CharacterLevelUp();
-                    Console.WriteLine("던전 클리어");
-                    Console.WriteLine("축하합니다!!");
-                    for(int i = 0; i<dungeons.Count; i++)
-                    {
-                        if(defLimit == dungeons[i].defLimit)
-                        {
-                            Console.WriteLine(
-                                $"{dungeons[i].name} 던전을 클리어 하였습니다.");
-                        }
-                    }
-                    Console.WriteLine();
-                    Console.WriteLine("[탐험 결과]");
-                    Console.WriteLine($"체력 {beforeHealth} -> {p.Hp:F0}");
-                    Console.WriteLine($"Gold {beforeGold} -> {p.Gold:F0}");
-                    Console.WriteLine();
-                    Console.WriteLine("0. 나가기");
-
-                    int num = ChoiceHelper(0, 0);
-
-                    if (num == 0) break; 
-                }
-            }
-            else
-            {
-                while (true)
-                {
-                    Console.Clear();
-                    Console.WriteLine("던전 클리어 실패");
-                    for (int i = 0; i < dungeons.Count; i++)
-                    {
-                        if (defLimit == dungeons[i].defLimit)
-                        {
-                            Console.WriteLine(
-                                $"{dungeons[i].name} 던전을 클리어 하지 못했습니다.");
-                        }
-                    }
-                    Console.WriteLine();
-                    Console.WriteLine("[탐험 결과]");
-                    Console.WriteLine($"체력 {beforeHealth} -> {p.Hp:F0}");
-                    Console.WriteLine($"Gold {beforeGold} -> {p.Gold:F0}");
-                    Console.WriteLine();
-                    Console.WriteLine("0. 나가기");
-
-                    int num = ChoiceHelper(0, 0);
-
-                    if(num == 0) break;
-                }
-            }
+            while (ChoiceHelper.Choice(0, 0) != 0) { }
         }
 
         private void CharacterRest()
@@ -479,7 +398,7 @@ namespace TextRpg
                 Console.WriteLine("1. 휴식하기");
                 Console.WriteLine("0. 나가기");
 
-                int num = ChoiceHelper(0, 1);
+                int num = ChoiceHelper.Choice(0, 1);
 
                 if (num == 0)
                 {
@@ -513,7 +432,7 @@ namespace TextRpg
                 Console.WriteLine($"1. 저장");
                 Console.WriteLine($"2. 취소");
 
-                int num = ChoiceHelper(1, 2);
+                int num = ChoiceHelper.Choice(1, 2);
 
                 if (num == 1)
                 {
@@ -532,7 +451,7 @@ namespace TextRpg
                 Console.WriteLine("1. 전사");
                 Console.WriteLine("2. 도적");
 
-                int num = ChoiceHelper(1, 2);
+                int num = ChoiceHelper.Choice(1, 2);
 
                 if (num == 1)
                 {
@@ -547,28 +466,28 @@ namespace TextRpg
             }
         }
 
-        private int ChoiceHelper(int min, int max)
-        {
-            while (true)
-            {
-                Console.WriteLine();
-                Console.WriteLine("원하시는 행동을 입력해주세요.");
-                Console.Write(">> ");
-                string input = Console.ReadLine();
+        //private int ChoiceHelper(int min, int max)
+        //{
+        //    while (true)
+        //    {
+        //        Console.WriteLine();
+        //        Console.WriteLine("원하시는 행동을 입력해주세요.");
+        //        Console.Write(">> ");
+        //        string input = Console.ReadLine();
 
-                int num;
-                if(int.TryParse(input, out num) && (min <= num && max >= num))
-                {
-                    return num;
-                }
-                else
-                {
-                    Console.WriteLine("잘못된 입력입니다.");
-                    Thread.Sleep(1000);
-                    return -1;
-                }
-            }
-        }
+        //        int num;
+        //        if(int.TryParse(input, out num) && (min <= num && max >= num))
+        //        {
+        //            return num;
+        //        }
+        //        else
+        //        {
+        //            Console.WriteLine("잘못된 입력입니다.");
+        //            Thread.Sleep(1000);
+        //            return -1;
+        //        }
+        //    }
+        //}
 
         //콘솔 색 변경인데 쓰기 애매하네
         private void ConsoleColorHelper(string text, ConsoleColor color, bool line)

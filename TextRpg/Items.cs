@@ -13,80 +13,64 @@ namespace TextRpg
     }
     internal class Items
     {
-        public ItemType itemType;
-        public string ItemName { get;}
-        public string ItemDescription { get; }
+        public ItemType ItemType { get; set; }
+        public string ItemName { get; set; }
+        public string ItemDescription { get; set; }
         public int ItemAtk { get; set; }
         public int ItemDef { get; set; }
-        public float ItemGold { get; }
+        public float ItemGold { get; set; }
 
+        public bool IsEquip {  get; set; }
+        public bool IsSell {  get; set; }
 
-        public Items[] item;
-        public bool isEquip = false;
-        public bool isSell = false;
+        public Items() { }
+
         public Items(string itemName, string descript, ItemType type, int atk, int def, int price)
         {
-            this.itemType = type;
+            this.ItemType = type;
             this.ItemName = itemName;
             this.ItemAtk = atk;
             this.ItemDef = def;
             this.ItemDescription = descript;
             this.ItemGold = price;
+            this.IsEquip = false;
+            this.IsSell = false;
         }
 
         public void ItemShow()
         {
-            if (isEquip)
-            {
-                Console.Write("[E]");
-            }
+            Console.Write(IsEquip ? "[E]" : "");
             Console.Write($"{ItemName}\t|");
-
-            if( itemType == ItemType.Weapon)
+            if(ItemType == ItemType.Weapon)
             {
-                Console.Write($" 공격력 + {ItemAtk}\t| {ItemDescription}");
+                Console.Write($" 공격력 + {ItemAtk}\t| ");
             }
-            else
+            if (ItemType == ItemType.Armor)
             {
-                Console.Write($" 방어력 + {ItemDef}\t| {ItemDescription}");
+                Console.Write($" 방어력 + {ItemDef}\t| ");
             }
+            Console.Write($"{ItemDescription}");
         }
 
         public void ItemShopShow()
         {
             Console.Write($"{ItemName}\t|");
-
-            if (itemType == ItemType.Weapon)
+            if (ItemType == ItemType.Weapon)
             {
-                Console.Write($" 공격력 + {ItemAtk}\t| {ItemDescription}\t");
+                Console.Write($" 공격력 + {ItemAtk}\t| ");
             }
-            else
+            if (ItemType == ItemType.Armor)
             {
-                Console.Write($" 방어력 + {ItemDef}\t| {ItemDescription}\t");
+                Console.Write($" 방어력 + {ItemDef}\t| ");
             }
-
-            if (isSell) {
-                Console.Write("| 구매완료");
-            }
-            else
-            {
-                Console.Write($"| {ItemGold} G");
-            }
+            Console.Write($"{ItemDescription}\t|");
+            Console.Write(IsSell ? "구매완료" : $"{ItemGold} G");
         }
 
         public void ItemShopSellShow()
         {
-            Console.Write($"{ItemName}\t|");
-
-            if (itemType == ItemType.Weapon)
-            {
-                Console.Write($" 공격력 + {ItemAtk}\t| {ItemDescription}\t");
-            }
-            else
-            {
-                Console.Write($" 방어력 + {ItemDef}\t| {ItemDescription}\t");
-            }
-            Console.Write($"| {ItemGold * 0.85f} G");
+            ItemShow();
+            Console.Write($"| {ItemGold * 0.85f:F0} G");
         }
     }
 }
